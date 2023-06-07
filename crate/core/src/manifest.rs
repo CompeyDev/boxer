@@ -1,0 +1,62 @@
+use serde::Deserialize;
+use std::{
+    fs::File,
+    io::{ErrorKind, Read},
+    path::PathBuf,
+    process::exit,
+};
+use toml::{Table, de::Error};
+
+#[derive(Deserialize, Clone)]
+pub struct ManifestSchema {
+    pub package: PackageSection,
+    pub scripts: Table,
+    pub dependencies: Table,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct PackageSection {
+    pub name: String,
+    pub version: String,
+    pub author: Vec<String>,
+}
+
+pub struct ManfiestHandler {
+    manifest_contents: String,
+}
+
+impl ManfiestHandler {
+    pub fn new(proj_dir: PathBuf) -> Self {
+        let mut manifest_contents = String::new();
+
+        match File::open(proj_dir.join("Boxer.toml")) {
+            Ok(mut contents) => contents
+                .read_to_string(&mut manifest_contents)
+                .expect("failed to read manifest contents to memory"),
+            Err(err) => {
+                if err.kind() == ErrorKind::NotFound {
+                    tracing::error!(
+                        "unable to find `Boxer.toml` manifest file in directory {:?}",
+                        proj_dir
+                    );
+
+                    exit(1);
+                } else {
+                    tracing::error!(
+                        "unable to read `Boxer.toml` manifest file in directory {:?} due to error {}",
+                        proj_dir,
+                        err.kind()
+                    );
+
+                    exit(1);
+                }
+            }
+        };
+
+        Self { manifest_contents }
+    }
+
+    pub fn parse_manifest(&self) -> Result<ManifestSchema, Error> {
+        Ok(toml::from_str::<ManifestSchema>(self.manifest_contents.as_str())?)
+    }
+}

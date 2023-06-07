@@ -1,6 +1,5 @@
-mod pull_package;
-pub mod utils;
+use boxer_core::package::PackageClient;
 
 fn main() {
-    pull_package::PackageClient::new().download_package("@devcomp/real", "0.0.1")
+    PackageClient::new().download_package("@devcomp/luau-asm", "0.0.1")
 }

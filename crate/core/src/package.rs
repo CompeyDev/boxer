@@ -1,9 +1,16 @@
-use std::{env::current_dir, fs::File, io::Write, path::Path};
-
-use crate::utils::meta::get_meta;
+use crate::manifest::ManfiestHandler;
+use boxer_utils::meta::get_meta;
 use git2::Repository;
 use reqwest::blocking::Client as reqwest;
 use serde::Deserialize;
+use std::{
+    collections::VecDeque,
+    env::current_dir,
+    fs::File,
+    io::Write,
+    path::Path,
+    process::{exit, Command},
+};
 
 pub struct PackageClient {
     registry: &'static str,
@@ -63,7 +70,7 @@ impl PackageClient {
                     package_namespace,
                     err
                 );
-                std::process::exit(1);
+                exit(1);
             }
         };
 
@@ -90,10 +97,72 @@ impl PackageClient {
 
             println!("{}", git_uri);
 
-            Repository::clone(git_uri.as_str().trim(), get_meta().repos_path.join(pkg_id))
+            let repo_path = get_meta().repos_path.join(pkg_id);
+
+            Repository::clone(git_uri.as_str().trim(), &repo_path)
                 .expect("failed to clone package git repo");
 
-            // execute build steps here
+            let post_install_cmd: String = match ManfiestHandler::new(repo_path).parse_manifest() {
+                Ok(parsed) => {
+                    let build_scripts = parsed.scripts;
+                    let target_script = build_scripts
+                        .get("post_install")
+                        .map(|s| s.to_owned())
+                        .unwrap();
+
+                    target_script.to_string()
+                }
+
+                Err(err) => {
+                    tracing::error!(
+                        "failed to parse config manifest `Boxer.toml`: {}",
+                        err.message()
+                    );
+
+                    exit(1);
+                }
+            };
+
+            let mut cmd_argv = post_install_cmd
+                .split_whitespace()
+                .collect::<VecDeque<&str>>();
+
+            let mut build_cmd = Command::new(
+                cmd_argv.pop_front().expect(
+                    format!(
+                        "failed to get build command executable for package {}",
+                        package_namespace
+                    )
+                    .as_str(),
+                ),
+            );
+
+            for arg in cmd_argv.into_iter() {
+                build_cmd.arg(arg);
+            }
+
+            let mut build_cmd_child = build_cmd.spawn().expect(
+                format!(
+                    "failed to initially spawn build command for package {}",
+                    package_namespace
+                )
+                .as_str(),
+            );
+
+            if !build_cmd_child
+                .wait()
+                .expect(
+                    format!(
+                        "failed to run spawned build command for package {}",
+                        package_namespace
+                    )
+                    .as_str(),
+                )
+                .success()
+            {
+                tracing::error!("build command for package {} failed.", package_namespace);
+                tracing::error!("-- stderr:\n{:?}", build_cmd_child.stderr.take().unwrap())
+            }
         } else {
             let pkg_bundle_uri = format!("http://{}/dl/{}", self.registry, target_pkg_meta.bundle);
 
@@ -124,10 +193,13 @@ impl PackageClient {
                 .as_str(),
             );
 
-            output_file.write(&bundle_chunks as &[u8]).expect(format!(
-                "failed to write to dependency bundle file for package {}",
-                package_namespace
-            ).as_str());
+            output_file.write(&bundle_chunks as &[u8]).expect(
+                format!(
+                    "failed to write to dependency bundle file for package {}",
+                    package_namespace
+                )
+                .as_str(),
+            );
         }
     }
 }
