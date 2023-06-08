@@ -32,7 +32,7 @@ where
             &Level::WARN => "WARN".yellow().bold(),
         };
 
-        write!(&mut writer, "[{}::{}] ", scope, meta.target())?;
+        write!(&mut writer, "[{}::{}] ", scope, meta.target().italic().underline())?;
 
         if let Some(scope) = ctx.event_scope() {
             for span in scope.from_root() {
