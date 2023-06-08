@@ -32,7 +32,12 @@ impl ManfiestHandler {
         match File::open(proj_dir.join("Boxer.toml")) {
             Ok(mut contents) => contents
                 .read_to_string(&mut manifest_contents)
-                .expect("failed to read manifest contents to memory"),
+                .unwrap_or_else(|err| {
+                    tracing::error!("failed to read manifest contents to memory");
+                    tracing::trace!("memory write error that occured {}", err);
+
+                    exit(1);
+                }),
             Err(err) => {
                 if err.kind() == ErrorKind::NotFound {
                     tracing::error!(

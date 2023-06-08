@@ -17,5 +17,9 @@ fn main() {
         .event_format(LogFormatter)
         .init();
 
-    PackageClient::new().download_package("@devcomp/luau-asm", "0.0.1");
+    PackageClient::new()
+        .download_package(
+            "@devcomp/luau-asm", 
+            "0.0.1"
+        );
 }
