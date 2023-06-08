@@ -1,6 +1,8 @@
 use boxer_core::package::PackageClient;
 use boxer_utils::fmt::LogFormatter;
+use colored::Colorize;
 use once_cell::unsync::Lazy;
+use std::time::Instant;
 use tracing::Level;
 
 fn main() {
@@ -17,9 +19,15 @@ fn main() {
         .event_format(LogFormatter)
         .init();
 
-    PackageClient::new()
-        .download_package(
-            "@devcomp/luau-asm", 
-            "0.0.1"
-        );
+    let start = Instant::now();
+
+    {
+        PackageClient::new().download_package("@devcomp/luau-asm", "0.0.1");
+    }
+
+    println!(
+        "       {} in {:.2?}",
+        "Finished".green().bold(),
+        start.elapsed()
+    );
 }

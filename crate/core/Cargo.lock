@@ -36,6 +36,7 @@ name = "boxer-core"
 version = "0.1.0"
 dependencies = [
  "boxer-utils",
+ "colored",
  "git2",
  "reqwest",
  "serde",

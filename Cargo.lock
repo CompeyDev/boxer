@@ -37,6 +37,7 @@ version = "0.1.0"
 dependencies = [
  "boxer-core",
  "boxer-utils",
+ "colored",
  "once_cell",
  "tracing",
  "tracing-subscriber",
@@ -47,6 +48,7 @@ name = "boxer-core"
 version = "0.1.0"
 dependencies = [
  "boxer-utils",
+ "colored",
  "git2",
  "reqwest",
  "serde",

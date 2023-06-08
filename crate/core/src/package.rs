@@ -1,5 +1,6 @@
 use crate::manifest::ManfiestHandler;
 use boxer_utils::meta::get_meta;
+use colored::Colorize;
 use git2::Repository;
 use reqwest::blocking::Client as reqwest;
 use serde::Deserialize;
@@ -63,6 +64,8 @@ impl PackageClient {
     }
 
     pub fn download_package(&self, package_namespace: &str, package_version: &str) {
+        tracing::info!("{} {}@{}...", "Downloading".green().bold(), package_namespace, package_version);
+        
         let namespace_api_uri = format!("http://{}/api/meta/{}", self.registry, package_namespace);
 
         let package_meta = match self.net.get(namespace_api_uri).send() {
@@ -91,6 +94,8 @@ impl PackageClient {
         }
 
         if target_pkg_meta.needs_build {
+            tracing::info!("    {} {}@{}...", "Building".purple(), package_namespace, package_version);
+
             let pkg_id = target_pkg_meta.identifier;
 
             let git_api_uri = format!("http://{}/api/git/{}", self.registry, pkg_id);
@@ -140,7 +145,12 @@ impl PackageClient {
                         .map(|s| s.to_owned())
                         .unwrap();
 
-                    target_script.to_string()
+                    let target_script_string = target_script.to_string();
+                    let mut target_script_trimmed = target_script_string.chars();
+
+                    target_script_trimmed.next();
+                    target_script_trimmed.next_back();
+                    target_script_trimmed.as_str().to_string()
                 }
 
                 Err(err) => {
@@ -153,9 +163,24 @@ impl PackageClient {
                 }
             };
 
+            tracing::debug!("post_install command to be executed: `{}`", post_install_cmd);
+
+            let shell: &str = if cfg!(target_os = "windows") {
+                "cmd"
+            } else {
+                "sh"
+            };
+
             let mut cmd_argv = post_install_cmd
                 .split_whitespace()
                 .collect::<VecDeque<&str>>();
+
+            cmd_argv.push_front(shell);
+            
+            #[cfg(not(target_os = "windows"))]
+            cmd_argv.insert(1, "-c");
+
+            tracing::debug!("args to be passed to command instance: {:#?}", cmd_argv);
 
             let mut build_cmd = Command::new(cmd_argv.pop_front().unwrap_or_else(|| {
                 tracing::error!(
@@ -170,11 +195,14 @@ impl PackageClient {
                 build_cmd.arg(arg);
             }
 
-            let mut build_cmd_child = build_cmd.spawn().unwrap_or_else(|_| {
+            tracing::trace!("current command instance: {:#?}", build_cmd);
+
+            let mut build_cmd_child = build_cmd.spawn().unwrap_or_else(|err| {
                 tracing::error!(
                     "failed to initially spawn build command for package {}",
                     package_namespace
                 );
+                tracing::error!("build command error: {}", err);
 
                 exit(1);
             });
@@ -192,9 +220,13 @@ impl PackageClient {
                 .success()
             {
                 tracing::error!("build command for package {} failed.", package_namespace);
-                tracing::error!("-- stderr:\n{:?}", build_cmd_child.stderr.take().unwrap())
+                tracing::error!("-- stderr:\n{:?}", build_cmd_child.stderr);
+                
+                exit(1);
             }
         } else {
+            tracing::info!("    {} {}@{}...", "Unpacking".purple(), package_namespace, package_version);
+
             let pkg_bundle_uri = format!("http://{}/dl/{}", self.registry, target_pkg_meta.bundle);
 
             let mut dl_resp = self.net.get(pkg_bundle_uri).send().unwrap_or_else(|_| {
@@ -246,5 +278,7 @@ impl PackageClient {
                     exit(1);
                 });
         }
+
+        tracing::info!("{} {}@{}", "Downloaded".blue().bold(), package_namespace, package_version);
     }
 }

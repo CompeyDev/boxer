@@ -32,7 +32,16 @@ where
             &Level::WARN => "WARN".yellow().bold(),
         };
 
-        write!(&mut writer, "[{}::{}] ", scope, meta.target().italic().underline())?;
+        let target = if meta.level() != &Level::INFO {
+            let mut sep = "::".to_owned();
+            sep.push_str(&meta.target().italic().underline());
+
+            sep
+        } else {
+            "".to_string()
+        };
+
+        write!(&mut writer, "[{}{}] ", scope, target)?;
 
         if let Some(scope) = ctx.event_scope() {
             for span in scope.from_root() {
