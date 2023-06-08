@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
     process::exit,
 };
-use toml::{Table, de::Error};
+use toml::{de::Error, Table};
 
 #[derive(Deserialize, Clone)]
 pub struct ManifestSchema {
@@ -62,6 +62,8 @@ impl ManfiestHandler {
     }
 
     pub fn parse_manifest(&self) -> Result<ManifestSchema, Error> {
-        Ok(toml::from_str::<ManifestSchema>(self.manifest_contents.as_str())?)
+        Ok(toml::from_str::<ManifestSchema>(
+            self.manifest_contents.as_str(),
+        )?)
     }
 }
