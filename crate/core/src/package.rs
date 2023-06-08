@@ -26,7 +26,6 @@ pub struct PackageMetadataResp {
     available_versions: Vec<PackageVersionMetadataResp>,
 }
 
-
 #[allow(dead_code)]
 #[derive(Deserialize, Clone)]
 struct PackageVersionMetadataResp {
