@@ -10,6 +10,7 @@ use toml::{de::Error, Table};
 #[derive(Deserialize, Clone)]
 pub struct ManifestSchema {
     pub package: PackageSection,
+    pub lib: LibSection,
     pub scripts: Table,
     pub dependencies: Table,
 }
@@ -18,7 +19,13 @@ pub struct ManifestSchema {
 pub struct PackageSection {
     pub name: String,
     pub version: String,
-    pub author: Vec<String>,
+    pub author: Option<Vec<String>>,
+    pub git: String,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct LibSection {
+    pub release_type: String,
 }
 
 pub struct ManfiestHandler {
