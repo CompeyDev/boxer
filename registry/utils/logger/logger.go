@@ -77,7 +77,7 @@ func Middleware() gin.HandlerFunc {
 			color.Blue.Sprintf("\033[4m%s\033", requestRoute), // route path
 			color.Magenta.Sprint("requestID"),                 // "requestID"
 			requestId,                                         // request ID
-			color.HiGreen.Sprint("client"),                    // "client"
+			color.Green.Sprint("client"),                      // "client"
 			clientType,                                        // client type
 			fmt.Sprintf("%dms", time.Since(startBench).Microseconds()),
 		)
