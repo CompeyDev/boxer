@@ -17,7 +17,7 @@ func Info(logType string, msg any) {
 		color.Bold.Sprint(logType),
 	)
 
-	fmt.Println(fmt.Sprintf("  %s", msg))
+	fmt.Printf("  %s\n", msg)
 }
 
 func Error(logType string, msg any) {
@@ -25,7 +25,7 @@ func Error(logType string, msg any) {
 		color.Bold.Sprint(logType),
 	)
 
-	fmt.Println(fmt.Sprintf("  %s", msg))
+	fmt.Printf("  %s\n", msg)
 }
 
 func Warn(logType string, msg any) {
@@ -33,7 +33,7 @@ func Warn(logType string, msg any) {
 		color.Bold.Sprint(logType),
 	)
 
-	fmt.Println(fmt.Sprintf("  %s", msg))
+	fmt.Printf("  %s\n", msg)
 }
 
 func getClientType(userAgent string) string {
@@ -63,7 +63,7 @@ func Middleware() gin.HandlerFunc {
 		statusCode := ctx.Writer.Status()
 		requestMethod := ctx.Request.Method
 		requestRoute := ctx.Request.URL.Path
-		requestId := fmt.Sprintf("request_%s", strings.Trim(uuid.New().URN(), "_rn:uuid:"))
+		requestId := fmt.Sprintf("request_%s", strings.Trim(uuid.New().URN(), "_rnuid:"))
 		clientType := getClientType(ctx.Request.UserAgent())
 
 		if requestMethod == "POST" {
