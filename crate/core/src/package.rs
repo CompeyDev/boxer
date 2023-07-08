@@ -226,7 +226,7 @@ impl PackageClient {
 
             Repository::clone(git_uri.as_str().trim(), &repo_path).unwrap_or_else(|err| {
                 tracing::error!("failed to clone package git repo");
-                tracing::trace!("cloning error that occurred: {}", err);
+                tracing::trace!("cloning error that occurred: `{}`", err);
 
                 // in case the directory already exists, that means we have 
                 // previously cached it. 

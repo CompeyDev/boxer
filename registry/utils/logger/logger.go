@@ -93,7 +93,7 @@ func Middleware() gin.HandlerFunc {
 
 			if requestSchemaTmp != nil {
 				requestSchema = requestSchemaTmp.([]string)
-			} else {
+			} else if ctx.Request.Method != "GET" {
 				Warn(
 					"  CORE  ",
 					fmt.Sprintf(
